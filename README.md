@@ -69,3 +69,7 @@ __The pre-configured app data is about the [Lens protocol developer documentatio
 3. How to query Lens data in bulk?
 
 > The base of this project was guided by [this Node.js tutorial](https://www.youtube.com/watch?v=CF5buEVrYwo), with some restructuring and ported over to Next.js. You can also follow them [here](https://twitter.com/Dev__Digest/status/1656744114409406467) on Twitter!
+
+### Getting your data
+
+I recommend checking out [GPT Repository Loader](https://github.com/mpoon/gpt-repository-loader) which makes it simple to turn any GitHub repo into a text format, preserving the structure of the files and file contents, making it easy to chop up and save into pinecone using my codebase.
