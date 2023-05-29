@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     environment: process.env.PINECONE_ENVIRONMENT || ''
   })
 
-  const indexName = 'test-index-2'
+  const indexName = 'my-test-index-2'
   const text = await queryPineconeVectorStoreAndQueryLLM(client, indexName, body)
 
   return NextResponse.json({
