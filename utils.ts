@@ -3,6 +3,7 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
 import { OpenAI } from 'langchain/llms/openai'
 import { loadQAStuffChain } from 'langchain/chains'
 import { Document } from 'langchain/document'
+import { timeout } from './config'
 
 export const queryPineconeVectorStoreAndQueryLLM = async (
   client,
@@ -73,7 +74,7 @@ export const createPineconeIndex = async (
 // 6. Log successful creation
       console.log(`Creating index.... please wait for it to finish initializing.`);
 // 7. Wait 60 seconds for index initialization
-    await new Promise((resolve) => setTimeout(resolve, 180000));
+    await new Promise((resolve) => setTimeout(resolve, timeout));
   } else {
 // 8. Log if index already exists
     console.log(`"${indexName}" already exists.`);

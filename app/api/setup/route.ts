@@ -6,6 +6,7 @@ import {
   createPineconeIndex,
   updatePinecone
 } from '../../../utils'
+import { indexName } from '../../../config'
 
 export async function POST() {
   const loader = new DirectoryLoader('./documents', {
@@ -14,7 +15,6 @@ export async function POST() {
   })
 
   const docs = await loader.load()
-  const indexName = 'my-test-index-2'
   const vectorDimensions = 1536
 
   const client = new PineconeClient()
