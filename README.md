@@ -42,7 +42,7 @@ git clone git@github.com:dabit3/semantic-search-nextjs-pinecone-langchain-chatgp
 
 2. Change into the directory and install the dependencies using either NPM or Yarn
 
-3. Copy `.examp.env.local` to a new file called `.env.local` and update with your API keys and environment.
+3. Copy `.example.env.local` to a new file called `.env.local` and update with your API keys and environment.
 
     __Be sure your environment is an actual environment given to you by Pinecone, like `us-west4-gcp-free`__
 
