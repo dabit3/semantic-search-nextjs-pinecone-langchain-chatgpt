@@ -19,10 +19,9 @@ export default function Home() {
     }
   }
   async function sendQuery() {
-    setResult('')
-    setQuery('')
-    setLoading(true)
     if (!query) return
+    setResult('')
+    setLoading(true)
     try {
       const result = await fetch('/api/read', {
         method: "POST",
