@@ -3,7 +3,6 @@ import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter'
 import { OpenAI } from 'langchain/llms/openai'
 import { loadQAStuffChain } from 'langchain/chains'
 import { Document } from 'langchain/document'
-import { timeout } from './config'
 
 export const queryPineconeVectorStoreAndQueryLLM = async (
   client,
@@ -13,17 +12,15 @@ export const queryPineconeVectorStoreAndQueryLLM = async (
   // 1. Start query process
   console.log('Querying Pinecone vector store...');
   // 2. Retrieve the Pinecone index
-  const index = client.Index(indexName);
+  const index = client.index(indexName);
   // 3. Create query embedding
   const queryEmbedding = await new OpenAIEmbeddings().embedQuery(question)
   // 4. Query Pinecone index and return top 10 matches
   let queryResponse = await index.query({
-    queryRequest: {
-      topK: 10,
-      vector: queryEmbedding,
-      includeMetadata: true,
-      includeValues: true,
-    },
+    topK: 10,
+    vector: queryEmbedding,
+    includeMetadata: true,
+    includeValues: true,
   });
   // 5. Log the number of matches 
   console.log(`Found ${queryResponse.matches.length} matches...`);
@@ -31,7 +28,7 @@ export const queryPineconeVectorStoreAndQueryLLM = async (
   console.log(`Asking question: ${question}...`);
   if (queryResponse.matches.length) {
     // 7. Create an OpenAI instance and load the QAStuffChain
-    const llm = new OpenAI({});
+    const llm = new OpenAI({ modelName: 'gpt-3.5-turbo' });
     const chain = loadQAStuffChain(llm);
     // 8. Extract and concatenate page content from matched documents
     const concatenatedPageContent = queryResponse.matches
@@ -55,37 +52,27 @@ export const createPineconeIndex = async (
   indexName,
   vectorDimension
 ) => {
-  // 1. Initiate index existence check
-  console.log(`Checking "${indexName}"...`);
-  // 2. Get list of existing indexes
-  const existingIndexes = await client.listIndexes();
-  // 3. If index doesn't exist, create it
-  if (!existingIndexes.includes(indexName)) {
-    // 4. Log index creation initiation
-    console.log(`Creating "${indexName}"...`);
-    // 5. Create index
-    await client.createIndex({
-      createRequest: {
-        name: indexName,
-        dimension: vectorDimension,
-        metric: 'cosine',
+  await client.createIndex({
+    name: indexName,
+    dimension: vectorDimension,
+    metric: 'cosine',
+    spec: {
+      serverless: {
+        cloud: 'aws',
+        region: 'us-west-2',
       },
-    });
-    // 6. Log successful creation
-      console.log(`Creating index.... please wait for it to finish initializing.`);
-    // 7. Wait for index initialization
-    await new Promise((resolve) => setTimeout(resolve, timeout));
-  } else {
-    // 8. Log if index already exists
-    console.log(`"${indexName}" already exists.`);
-  }
+    },
+    suppressConflicts: true,
+    waitUntilReady: true,
+  });
+  console.log(`Index "${indexName}" is ready!`);
 };
 
 
 export const updatePinecone = async (client, indexName, docs) => {
   console.log('Retrieving Pinecone index...');
   // 1. Retrieve Pinecone index
-  const index = client.Index(indexName);
+  const index = client.index(indexName);
   // 2. Log the retrieved index name
   console.log(`Pinecone index retrieved: ${indexName}`);
   // 3. Process each document in the docs array
@@ -127,15 +114,10 @@ export const updatePinecone = async (client, indexName, docs) => {
           txtPath: txtPath,
         },
       };
-      batch = [...batch, vector]
+      batch.push(vector);
       // When batch is full or it's the last item, upsert the vectors
       if (batch.length === batchSize || idx === chunks.length - 1) {
-        await index.upsert({
-          upsertRequest: {
-            vectors: batch,
-          },
-        });
-        // Empty the batch
+        await index.upsert(batch);
         batch = [];
       }
     }
