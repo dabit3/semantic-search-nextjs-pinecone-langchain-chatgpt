@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className} style={{display: 'flex', height: '100vh'}}>
+      <body className={inter.className} style={{display: 'flex', height: '100vh'}} suppressHydrationWarning>
         {children}
       </body>
     </html>
