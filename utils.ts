@@ -18,12 +18,10 @@ export const queryPineconeVectorStoreAndQueryLLM = async (
   const queryEmbedding = await new OpenAIEmbeddings().embedQuery(question)
   // 4. Query Pinecone index and return top 10 matches
   let queryResponse = await index.query({
-    queryRequest: {
-      topK: 10,
-      vector: queryEmbedding,
-      includeMetadata: true,
-      includeValues: true,
-    },
+    topK: 10,
+    vector: queryEmbedding,
+    includeMetadata: true,
+    includeValues: true,
   });
   // 5. Log the number of matches 
   console.log(`Found ${queryResponse.matches.length} matches...`);
@@ -31,7 +29,9 @@ export const queryPineconeVectorStoreAndQueryLLM = async (
   console.log(`Asking question: ${question}...`);
   if (queryResponse.matches.length) {
     // 7. Create an OpenAI instance and load the QAStuffChain
-    const llm = new OpenAI({});
+    const llm = new OpenAI({
+      modelName: 'gpt-3.5-turbo',
+    });
     const chain = loadQAStuffChain(llm);
     // 8. Extract and concatenate page content from matched documents
     const concatenatedPageContent = queryResponse.matches
@@ -55,30 +55,26 @@ export const createPineconeIndex = async (
   indexName,
   vectorDimension
 ) => {
-  // 1. Initiate index existence check
-  console.log(`Checking "${indexName}"...`);
-  // 2. Get list of existing indexes
-  const existingIndexes = await client.listIndexes();
-  // 3. If index doesn't exist, create it
-  if (!existingIndexes.includes(indexName)) {
-    // 4. Log index creation initiation
-    console.log(`Creating "${indexName}"...`);
-    // 5. Create index
-    await client.createIndex({
-      createRequest: {
-        name: indexName,
-        dimension: vectorDimension,
-        metric: 'cosine',
-      },
-    });
-    // 6. Log successful creation
-      console.log(`Creating index.... please wait for it to finish initializing.`);
-    // 7. Wait for index initialization
-    await new Promise((resolve) => setTimeout(resolve, timeout));
-  } else {
-    // 8. Log if index already exists
-    console.log(`"${indexName}" already exists.`);
-  }
+
+  await client.createIndex({
+    name: indexName,
+    dimension: vectorDimension,
+    metric: 'cosine',
+    spec: {
+      serverless: {
+        cloud: 'aws',
+        region: 'us-west-2'
+      }
+    },
+    // This option tells the client not to throw if the index already exists.
+    suppressConflicts: true,
+    // This option tells the client not to resolve the promise until the
+    // index is ready.
+    waitUntilReady: true,
+  });
+
+  console.log(`Index "${indexName}" is ready!`);
+
 };
 
 
@@ -114,7 +110,7 @@ export const updatePinecone = async (client, indexName, docs) => {
     );
     // 7. Create and upsert vectors in batches of 100
     const batchSize = 100;
-    let batch:any = [];
+    let batch: any = [];
     for (let idx = 0; idx < chunks.length; idx++) {
       const chunk = chunks[idx];
       const vector = {
@@ -127,16 +123,11 @@ export const updatePinecone = async (client, indexName, docs) => {
           txtPath: txtPath,
         },
       };
-      batch = [...batch, vector]
+      batch.push(vector);
       // When batch is full or it's the last item, upsert the vectors
       if (batch.length === batchSize || idx === chunks.length - 1) {
-        await index.upsert({
-          upsertRequest: {
-            vectors: batch,
-          },
-        });
-        // Empty the batch
-        batch = [];
+        await index.upsert(batch);
+        batch = []; // Clear the batch for the next iteration
       }
     }
     // 8. Log the number of vectors updated

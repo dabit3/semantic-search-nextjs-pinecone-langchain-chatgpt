@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { PineconeClient } from '@pinecone-database/pinecone'
+import { Pinecone } from '@pinecone-database/pinecone';
 import { TextLoader } from 'langchain/document_loaders/fs/text'
 import { DirectoryLoader } from 'langchain/document_loaders/fs/directory'
 import { PDFLoader } from 'langchain/document_loaders/fs/pdf'
@@ -19,11 +19,9 @@ export async function POST() {
   const docs = await loader.load()
   const vectorDimensions = 1536
 
-  const client = new PineconeClient()
-  await client.init({
+  const client = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY || '',
-    environment: process.env.PINECONE_ENVIRONMENT || ''
-  })
+  });
 
   try {
     await createPineconeIndex(client, indexName, vectorDimensions)
